@@ -24,6 +24,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/gorilla/mux"
 	"github.com/spf13/cobra"
 )
 
@@ -33,11 +34,17 @@ var serveCmd = &cobra.Command{
 	Short: "Run http service",
 	Run: func(cmd *cobra.Command, args []string) {
 		listen := ":3000"
-		router := http.NewServeMux()
+		router := mux.NewRouter()
 
 		router.HandleFunc("/hello", func(w http.ResponseWriter, r *http.Request) {
 			w.Write([]byte("Hello, I'm buhaoyong\n"))
 		})
+
+		router.HandleFunc("/user", func(w http.ResponseWriter, r *http.Request) {}).Methods("GET")
+		router.HandleFunc("/user/{id}", func(w http.ResponseWriter, r *http.Request) {}).Methods("GET")
+		router.HandleFunc("/user/{id}", func(w http.ResponseWriter, r *http.Request) {}).Methods("POST")
+		router.HandleFunc("/user/{id}", func(w http.ResponseWriter, r *http.Request) {}).Methods("PUT")
+		router.HandleFunc("/user/{id}", func(w http.ResponseWriter, r *http.Request) {}).Methods("DELETE")
 
 		server := &http.Server{
 			Handler: router,
