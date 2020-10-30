@@ -24,10 +24,8 @@ import (
 	"syscall"
 	"time"
 
-	"buhaoyong/app/api"
-	"buhaoyong/app/website"
+	"buhaoyong/app"
 
-	"github.com/gorilla/mux"
 	"github.com/spf13/cobra"
 )
 
@@ -37,20 +35,14 @@ var serveCmd = &cobra.Command{
 	Short: "Run http service",
 	Run: func(cmd *cobra.Command, args []string) {
 		listen := ":3000"
-		router := mux.NewRouter()
 
-		apiConfig := &api.Config{
-			Prefix: "/api",
-		}
-		api.New(apiConfig, router)
+		component, _ := app.SetupComponent()
 
-		websiteConfig := &website.Config{
-			Prefix: "/",
-		}
-		website.New(websiteConfig, router)
+		app.SetupAPI(component)
+		app.SetupWebsite(component)
 
 		server := &http.Server{
-			Handler: router,
+			Handler: component.Router,
 			Addr:    listen,
 		}
 
