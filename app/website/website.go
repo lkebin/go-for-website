@@ -2,6 +2,7 @@ package website
 
 import (
 	"buhaoyong/app/website/controller"
+	"buhaoyong/pkg/service/post"
 
 	"github.com/gorilla/mux"
 )
@@ -14,14 +15,16 @@ type Config struct {
 type Repository interface{}
 
 type repositoryImpl struct {
-	config *Config
-	router *mux.Router
+	config      *Config
+	router      *mux.Router
+	postService post.Repository
 }
 
-func New(config *Config, router *mux.Router) Repository {
+func New(config *Config, router *mux.Router, postService post.Repository) Repository {
 	impl := &repositoryImpl{
-		config: config,
-		router: router,
+		config:      config,
+		router:      router,
+		postService: postService,
 	}
 
 	impl.setupRoutes()
@@ -42,6 +45,6 @@ func (r *repositoryImpl) setupRoutes() {
 
 	baseController := controller.New()
 
-	helloController := controller.NewHelloController(baseController)
+	helloController := controller.NewHelloController(baseController, r.postService)
 	router.HandleFunc("/hello", helloController.SayHello).Methods("GET")
 }

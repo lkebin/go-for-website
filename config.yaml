@@ -5,3 +5,11 @@ website:
 api:
   domain: 
   prefix: /api
+
+migration:
+  dsn: "mysql://root@tcp(mysql:3306)/test?x-migrations-table=migrations&charset=utf8mb4"
+  path: ./migrations
+
+database:
+  driver: "mysql"
+  dsn: "root:@tcp(mysql:3306)/test?charset=utf8mb4"

@@ -5,6 +5,8 @@ package app
 import (
 	"buhaoyong/app/api"
 	"buhaoyong/app/website"
+	"buhaoyong/pkg/db"
+	"buhaoyong/pkg/service/post"
 	"fmt"
 
 	"github.com/google/wire"
@@ -12,10 +14,15 @@ import (
 	"github.com/spf13/viper"
 )
 
+var (
+	dbSet = wire.NewSet(db.New, dbConfigProvider)
+)
+
 func SetupComponent() (*Component, error) {
 	wire.Build(
 		New,
 		mux.NewRouter,
+		dbSet,
 	)
 
 	return nil, nil
@@ -36,6 +43,7 @@ func SetupWebsite(c *Component) (website.Repository, error) {
 	wire.Build(
 		website.New,
 		websiteConfigProvider,
+		postServiceProvider,
 		wire.FieldsOf(&c, "Router"),
 	)
 
@@ -66,4 +74,26 @@ func websiteConfigProvider() (*website.Config, error) {
 		return nil, fmt.Errorf("can not decode website config: %w", err)
 	}
 	return &c, nil
+}
+
+func dbConfigProvider() (*db.Config, error) {
+	var c db.Config
+	key := "database"
+	if !viper.IsSet(key) {
+		return nil, fmt.Errorf("missing %s config", key)
+	}
+
+	if err := viper.UnmarshalKey(key, &c); err != nil {
+		return nil, fmt.Errorf("can not decode database config: %w", err)
+	}
+	return &c, nil
+}
+
+func postServiceProvider(c *Component) (post.Repository, error) {
+	wire.Build(
+		post.New,
+		wire.FieldsOf(&c, "DB"),
+	)
+
+	return nil, nil
 }

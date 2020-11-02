@@ -8,7 +8,10 @@ package app
 import (
 	"buhaoyong/app/api"
 	"buhaoyong/app/website"
+	"buhaoyong/pkg/db"
+	"buhaoyong/pkg/service/post"
 	"fmt"
+	"github.com/google/wire"
 	"github.com/gorilla/mux"
 	"github.com/spf13/viper"
 )
@@ -17,7 +20,15 @@ import (
 
 func SetupComponent() (*Component, error) {
 	router := mux.NewRouter()
-	component := New(router)
+	config, err := dbConfigProvider()
+	if err != nil {
+		return nil, err
+	}
+	dbDB, err := db.New(config)
+	if err != nil {
+		return nil, err
+	}
+	component := New(router, dbDB)
 	return component, nil
 }
 
@@ -37,11 +48,25 @@ func SetupWebsite(c *Component) (website.Repository, error) {
 		return nil, err
 	}
 	router := c.Router
-	repository := website.New(config, router)
+	repository, err := postServiceProvider(c)
+	if err != nil {
+		return nil, err
+	}
+	websiteRepository := website.New(config, router, repository)
+	return websiteRepository, nil
+}
+
+func postServiceProvider(c *Component) (post.Repository, error) {
+	dbDB := c.DB
+	repository := post.New(dbDB)
 	return repository, nil
 }
 
 // wire.go:
+
+var (
+	dbSet = wire.NewSet(db.New, dbConfigProvider)
+)
 
 func apiConfigProvider() (*api.Config, error) {
 	var c api.Config
@@ -49,8 +74,8 @@ func apiConfigProvider() (*api.Config, error) {
 	if !viper.IsSet(key) {
 		return nil, fmt.Errorf("missing %s config", key)
 	}
-	err := viper.UnmarshalKey(key, &c)
-	if err != nil {
+
+	if err := viper.UnmarshalKey(key, &c); err != nil {
 		return nil, fmt.Errorf("can not decode api config: %w", err)
 	}
 	return &c, nil
@@ -62,9 +87,22 @@ func websiteConfigProvider() (*website.Config, error) {
 	if !viper.IsSet(key) {
 		return nil, fmt.Errorf("missing %s config", key)
 	}
-	err := viper.UnmarshalKey(key, &c)
-	if err != nil {
+
+	if err := viper.UnmarshalKey(key, &c); err != nil {
 		return nil, fmt.Errorf("can not decode website config: %w", err)
+	}
+	return &c, nil
+}
+
+func dbConfigProvider() (*db.Config, error) {
+	var c db.Config
+	key := "database"
+	if !viper.IsSet(key) {
+		return nil, fmt.Errorf("missing %s config", key)
+	}
+
+	if err := viper.UnmarshalKey(key, &c); err != nil {
+		return nil, fmt.Errorf("can not decode database config: %w", err)
 	}
 	return &c, nil
 }
